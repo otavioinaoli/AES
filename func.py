@@ -20,6 +20,44 @@ S_BOX = [
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 ]
 
+#Fução que faz multiplicação de 2 elementos
+
+def matrix_multiplier_aux(element_line, element_column):
+    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
+    e1 = bin(element_line)[2:].zfill(8)
+    e2 = bin(element_column)[2:].zfill(8)
+
+    result = 0
+
+    for l in range(7, -1, -1):
+        if(e2[l] == '1'):
+            result ^= int(e1, 2) << 7 - l
+
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+
+    return hex(result)
+    
+#Função que faz multiplicação de matrizes     
+def matrix_multiplier(matrix1, matrix2):
+    matrix_result =  [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+    for i in range (4):
+        for j in range (4):
+            for k in range (4):
+                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
+                
+                
+    return matrix_result
+
+
 def key_schedule():
     return
 
@@ -32,7 +70,7 @@ def byte_substitution(block):
 
 #Deslocamento c : 0 (esquerda - cifragem) e c : 1 (direita - decifragem)
 def shiftrows_op(j, i, c):
-        if(c == 0):
+        if(c == 0): 
             return j - i
         else:
             return j + i
@@ -61,6 +99,20 @@ def encrypt_block(block, key):
     
     return x
 
+def to_block(block, text, base):
+        i_block = 0
+        for j in range (4):
+            for i in range (4):
+                first_hexa = "0"
+                second_hexa = "0"
+                if(base + i_block < len(text)):
+                    first_hexa = text[base + i_block]
+                if(base + i_block + 1 < len(text)):
+                    second_hexa = text[base + i_block]
+                block[i][j] = hex(int(first_hexa + second_hexa, 16))
+                i_block += 2
+        return block
+
 def encrypt(plaintext, key):
     cyphertext = ""
 
@@ -72,17 +124,7 @@ def encrypt(plaintext, key):
             [0x88, 0x99, 0xAA, 0xBB],
             [0xCC, 0xDD, 0xEE, 0xFF]
         ]
-        i_block = 0
-        for j in range (4):
-            for i in range (4):
-                first_hexa = "0"
-                second_hexa = "0"
-                if(base + i_block < len(plaintext)):
-                    first_hexa = plaintext[base + i_block]
-                if(base + i_block + 1 < len(plaintext)):
-                    second_hexa = plaintext[base + i_block]
-                block[i][j] = hex(int(first_hexa + second_hexa, 16))
-                i_block += 2
+        block = to_block(block, plaintext, base)
         cyphertext += encrypt_block(block, key)
         base += 32
 
@@ -103,17 +145,7 @@ def decrypt(ciphertext, key):
             [0x88, 0x99, 0xAA, 0xBB],
             [0xCC, 0xDD, 0xEE, 0xFF]
         ]
-        i_block = 0
-        for j in range (4):
-            for i in range (4):
-                first_hexa = "0"
-                second_hexa = "0"
-                if(base + i_block < len(ciphertext)):
-                    first_hexa = ciphertext[base + i_block]
-                if(base + i_block + 1 < len(ciphertext)):
-                    second_hexa = ciphertext[base + i_block]
-                block[i][j] = hex(int(first_hexa + second_hexa, 16))
-                i_block += 2
+        block = to_block(block, ciphertext, base)
         plaintext += encrypt_block(block, key)
         base += 32
         
