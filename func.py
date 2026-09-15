@@ -30,15 +30,32 @@ def byte_substitution(block):
 
     return block
 
-def shiftrows():
-    return
+#Deslocamento c : 0 (esquerda - cifragem) e c : 1 (direita - decifragem)
+def shiftrows_op(j, i, c):
+        if(c == 0):
+            return j - i
+        else:
+            return j + i
+
+def shiftrows(block, c):
+    y = block
+    for i in range (4):
+        j = 0
+        for k in range (4):
+            y[i][shiftrows_op(j, i, c) % 4] = block[i][j]
+            j += 1
+
+    return y
 
 def mixcolumm():
     return
 
-def addition():
-    return
+def addition(block, round_key):
+    for i in range (4):
+        for j in range (4):
+            block[i][j] = block[i][j] ^ round_key[i][j]
 
+    return block
 
 def encrypt(x,y):
 
