@@ -57,12 +57,67 @@ def addition(block, round_key):
 
     return block
 
-def encrypt(x,y):
-
+def encrypt_block(block, key):
+    
     return x
 
+def encrypt(plaintext, key):
+    cyphertext = ""
 
-def decrypt():
+    base = 0
+    while(base < len(plaintext)):
+        block = [
+            [0x00, 0x11, 0x22, 0x33],
+            [0x44, 0x55, 0x66, 0x77],
+            [0x88, 0x99, 0xAA, 0xBB],
+            [0xCC, 0xDD, 0xEE, 0xFF]
+        ]
+        i_block = 0
+        for j in range (4):
+            for i in range (4):
+                first_hexa = "0"
+                second_hexa = "0"
+                if(base + i_block < len(plaintext)):
+                    first_hexa = plaintext[base + i_block]
+                if(base + i_block + 1 < len(plaintext)):
+                    second_hexa = plaintext[base + i_block]
+                block[i][j] = hex(int(first_hexa + second_hexa, 16))
+                i_block += 2
+        cyphertext += encrypt_block(block, key)
+        base += 32
+
+    return cyphertext
+
+def decrypt_block(block, key):
 
     return
+
+def decrypt(ciphertext, key):
+    plaintext = ""
+
+    base = 0
+    while(base < len(ciphertext)):
+        block = [
+            [0x00, 0x11, 0x22, 0x33],
+            [0x44, 0x55, 0x66, 0x77],
+            [0x88, 0x99, 0xAA, 0xBB],
+            [0xCC, 0xDD, 0xEE, 0xFF]
+        ]
+        i_block = 0
+        for j in range (4):
+            for i in range (4):
+                first_hexa = "0"
+                second_hexa = "0"
+                if(base + i_block < len(ciphertext)):
+                    first_hexa = ciphertext[base + i_block]
+                if(base + i_block + 1 < len(ciphertext)):
+                    second_hexa = ciphertext[base + i_block]
+                block[i][j] = hex(int(first_hexa + second_hexa, 16))
+                i_block += 2
+        plaintext += encrypt_block(block, key)
+        base += 32
+        
+    return plaintext
+
+
 
