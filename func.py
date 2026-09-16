@@ -58,8 +58,40 @@ def matrix_multiplier(matrix1, matrix2):
     return matrix_result
 
 
-def key_schedule():
+def g():
+
     return
+
+def xor():
+    return
+
+"""
+
+Round key 0  → W[0]  W[1]  W[2]  W[3]
+Round key 1  → W[4]  W[5]  W[6]  W[7]
+Round key 2  → W[8]  W[9]  W[10] W[11]
+...
+Round key 10 → W[40] W[41] W[42] W[43]
+"""
+
+def key_expansion(key):
+
+    W = [None] * 44 # lista de 44 words
+
+    # as 4 primeiras words são a chave original
+    W[0] = key[0:3]
+    W[1] = key[4:7]
+    W[2] = key[8:11]
+    W[3] = key[12:15]
+
+    
+    for i in range(1,11):
+        W[4*i] = xor(W[4 * (i-1)], g(W[4*i - 1]))
+        
+        for j in range(1,4):
+            W[4*i + j] = xor(W[4*i + j - 1], g(W[4 * (i-1) + j]))
+        
+    return W
 
 def byte_substitution(block):
     for i in range (4):
@@ -97,7 +129,7 @@ def addition(block, round_key):
 
 def encrypt_block(block, key):
     
-    return x
+    return block
 
 def to_block(block, text, base):
         i_block = 0
