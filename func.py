@@ -65,32 +65,35 @@ def g():
 def xor():
     return
 
-"""
-
-Round key 0  → W[0]  W[1]  W[2]  W[3]
-Round key 1  → W[4]  W[5]  W[6]  W[7]
-Round key 2  → W[8]  W[9]  W[10] W[11]
-...
-Round key 10 → W[40] W[41] W[42] W[43]
-"""
-
 def key_expansion(key):
+    """
+    Expands the 128-bit AES key into 44 words, grouped into 11 round keys, with 4 words per round key
+    Each word contains 4 bytes
 
-    W = [None] * 44 # lista de 44 words
+    Parameters:
+        key: the original 128-bit AES key
 
-    # as 4 primeiras words são a chave original
-    W[0] = key[0:3]
-    W[1] = key[4:7]
-    W[2] = key[8:11]
-    W[3] = key[12:15]
+    Returns:
+        W: a list containing the 44 expanded key words
+    """
 
-    
-    for i in range(1,11):
-        W[4*i] = xor(W[4 * (i-1)], g(W[4*i - 1]))
-        
-        for j in range(1,4):
-            W[4*i + j] = xor(W[4*i + j - 1], g(W[4 * (i-1) + j]))
-        
+    W = [None] * 44
+
+    # Copy the original key into the first four words
+    W[0] = key[0:4]
+    W[1] = key[4:8]
+    W[2] = key[8:12]
+    W[3] = key[12:16]
+
+    # Generate the remaining 40 words
+    for i in range(1, 11):
+        # The first word of each round key uses the g() transformation before the XOR operation
+        W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1]))
+
+        # Generate the other three words of the round key
+        for j in range(1, 4):
+            W[4 * i + j] = xor(W[4 * i + j - 1], W[4 * (i - 1) + j])
+
     return W
 
 def byte_substitution(block):
