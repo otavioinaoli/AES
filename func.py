@@ -20,7 +20,9 @@ S_BOX = [
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 ]
 
-#Fução que faz multiplicação de 2 elementos
+RC = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
+
+#Função que faz multiplicação de 2 elementos
 
 def matrix_multiplier_aux(element_line, element_column):
     #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
@@ -57,13 +59,47 @@ def matrix_multiplier(matrix1, matrix2):
                 
     return matrix_result
 
+def g(W, i_round):
+    """
+    Applies the g() transformation to a 4-byte word
 
-def g():
+    Parameters:
+        W: a list with a 4-byte word
+        i_round: the 1-based index of the round
+    Returns:
+        W: the transformed 4-byte word
+    """
 
-    return
+    # RotWord: rotate the word one byte to the left
+    W = W[1:] + W[:1]
 
-def xor():
-    return
+    # SubWord: apply the S-box to each byte
+    for i in range (4):
+        W[i] = S_BOX[W[i]]
+
+    # Round Constant: XOR the first byte with the round constant
+    W[0] = W[0] ^ RC[i_round-1]
+
+    return W
+
+def xor(w1, w2):
+    """
+    Applies the XOR operation between two 4-byte words
+
+    Parameters:
+        w1: a list containing the first 4-byte word
+        w2: a list containing the second 4-byte word
+
+    Returns:
+        result: a list containing the result of the byte-wise XOR
+    """
+
+    result = [None] * 4
+
+    for i in range(4):
+        result[i] = w1[i] ^ w2[i]
+
+    return result
 
 def key_expansion(key):
     """
@@ -71,7 +107,7 @@ def key_expansion(key):
     Each word contains 4 bytes
 
     Parameters:
-        key: the original 128-bit AES key
+        key: a list containing the 16 bytes of the original AES-128 key
 
     Returns:
         W: a list containing the 44 expanded key words
@@ -88,7 +124,7 @@ def key_expansion(key):
     # Generate the remaining 40 words
     for i in range(1, 11):
         # The first word of each round key uses the g() transformation before the XOR operation
-        W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1]))
+        W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1], i))
 
         # Generate the other three words of the round key
         for j in range(1, 4):
@@ -111,7 +147,8 @@ def shiftrows_op(j, i, c):
             return j + i
 
 def shiftrows(block, c):
-    y = block
+    y = [row[:] for row in block]
+
     for i in range (4):
         j = 0
         for k in range (4):
