@@ -1,6 +1,6 @@
-# S_BOX: lista com todas as 256 combinações de valores hexadecimais 
-# S_BOX[AB] retorna o valor na linha A e coluna B, ou seja, o valor na AB° posição
-
+# S_BOX: AES substitution box containing 256 substitution values, organized as a 16x16 table
+#        The first hexadecimal digit of the input selects the row, and the second selects the column
+#        S_BOX[0xAB] = row A, column B
 S_BOX = [
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -20,44 +20,9 @@ S_BOX = [
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 ]
 
+# RC: the 10 round constants used in the AES-128 key expansion
+#     RC[i] = round constant for round i + 1
 RC = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
-
-#Função que faz multiplicação de 2 elementos
-
-def matrix_multiplier_aux(element_line, element_column):
-    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
-    e1 = bin(element_line)[2:].zfill(8)
-    e2 = bin(element_column)[2:].zfill(8)
-
-    result = 0
-
-    for l in range(7, -1, -1):
-        if(e2[l] == '1'):
-            result ^= int(e1, 2) << 7 - l
-
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-
-    return hex(result)
-    
-#Função que faz multiplicação de matrizes     
-def matrix_multiplier(matrix1, matrix2):
-    matrix_result =  [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
-    for i in range (4):
-        for j in range (4):
-            for k in range (4):
-                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
-                
-                
-    return matrix_result
 
 def g(W, i_round):
     """
@@ -133,20 +98,58 @@ def key_expansion(key):
     return W
 
 def byte_substitution(block):
+    """
+    Applies the AES S-box substitution to every byte in a 4x4 block
+
+    Parameters:
+        block: A 4x4 list containing the bytes of the AES state
+
+    Returns:
+        block: The block after applying the S-box substitution
+    """
+
     for i in range (4):
         for j in range (4):
             block[i][j] = S_BOX[block[i][j]]
 
     return block
 
-#Deslocamento c : 0 (esquerda - cifragem) e c : 1 (direita - decifragem)
 def shiftrows_op(j, i, c):
-        if(c == 0): 
-            return j - i
-        else:
-            return j + i
+    """
+    Calculates the new column position of a byte during ShiftRows
+
+    Parameters:
+        j: original column index of the byte
+        i: row index, which determines the number of positions shifted
+        c: shift direction: 0 for left and 1 for right
+
+    Returns:
+        The new column index of the byte
+    """
+
+    if c == 0:
+        return j - i
+    else:
+        return j + i
 
 def shiftrows(block, c):
+    """
+    Applies the ShiftRows transformation to a 4x4 AES state
+    Each row is cyclically shifted by its row index:
+        row 0 → shifted by 0 positions
+        row 1 → shifted by 1 position
+        row 2 → shifted by 2 positions
+        row 3 → shifted by 3 positions
+
+    Parameters:
+        block: a 4x4 list containing the bytes of the AES state
+        c: the shift direction: 0 for left (encryption) and 1 for right (decryption)
+
+    Returns:
+        y: a new 4x4 block after applying the ShiftRows transformation
+    """
+
+    # Create a copy so that the original block is not modified
     y = [row[:] for row in block]
 
     for i in range (4):
@@ -157,19 +160,63 @@ def shiftrows(block, c):
 
     return y
 
-def mixcolumm():
-    return
+def key_addition(block, round_key):
+    """
+    Applies the AddRoundKey transformation by XORing each byte
+    of the state with the corresponding byte of the round key
 
-def addition(block, round_key):
-    for i in range (4):
-        for j in range (4):
+    Parameters:
+        block: a 4x4 list containing the bytes of the AES state
+        round_key: a 4x4 list containing the bytes of the round key
+
+    Returns:
+        block: the state after applying the AddRoundKey transformation
+    """
+
+    for i in range(4):
+        for j in range(4):
             block[i][j] = block[i][j] ^ round_key[i][j]
 
     return block
 
-def encrypt_block(block, key):
-    
-    return block
+#Função que faz multiplicação de 2 elementos
+def matrix_multiplier_aux(element_line, element_column):
+    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
+    e1 = bin(element_line)[2:].zfill(8)
+    e2 = bin(element_column)[2:].zfill(8)
+
+    result = 0
+
+    for l in range(7, -1, -1):
+        if(e2[l] == '1'):
+            result ^= int(e1, 2) << 7 - l
+
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
+
+    return hex(result)
+
+#Função que faz multiplicação de matrizes     
+def matrix_multiplier(matrix1, matrix2):
+    matrix_result =  [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+    for i in range (4):
+        for j in range (4):
+            for k in range (4):
+                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
+                
+                
+    return matrix_result
+
+def mixcolumm():
+    return
 
 def to_block(block, text, base):
         i_block = 0
@@ -184,6 +231,10 @@ def to_block(block, text, base):
                 block[i][j] = hex(int(first_hexa + second_hexa, 16))
                 i_block += 2
         return block
+
+def encrypt_block(block, key):
+    
+    return block
 
 def encrypt(plaintext, key):
     cyphertext = ""
@@ -222,6 +273,3 @@ def decrypt(ciphertext, key):
         base += 32
         
     return plaintext
-
-
-
