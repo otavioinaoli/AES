@@ -201,16 +201,19 @@ def matrix_multiplier_aux(element_line, element_column):
 
     result = 0
 
+    #Fazendo a multiplicação entre os 2 números
     for l in range(7, -1, -1):
         if(e2[l] == '1'):
             result ^= int(e1, 2) << 7 - l
 
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
-    #OBS: PRECISA DIVIDIR AINDA PELO POLINOMIO LÁ
 
+    #polinomio primo m(x) =x8+x4+x3+x+1
+    pp = 0b100011011
+
+    #Realizando a divisão modular do resultado da multiplicação pelo polinomio primo    
+    while result.bit_length() >= pp.bit_length():
+        result ^= pp <<  (result.bit_length() - pp.bit_length())
+        
     return hex(result)
 
 #Função que faz multiplicação de matrizes     
