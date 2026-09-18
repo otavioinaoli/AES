@@ -233,18 +233,18 @@ def mixcolumm():
     return
 
 def to_block(block, text, base):
-        i_block = 0
-        for j in range (4):
-            for i in range (4):
-                first_hexa = "0"
-                second_hexa = "0"
-                if(base + i_block < len(text)):
-                    first_hexa = text[base + i_block]
-                if(base + i_block + 1 < len(text)):
-                    second_hexa = text[base + i_block]
-                block[i][j] = hex(int(first_hexa + second_hexa, 16))
-                i_block += 2
-        return block
+    i_block = 0
+    for j in range (4):
+        for i in range (4):
+            first_hexa = "0"
+            second_hexa = "0"
+            if(base + i_block < len(text)):
+                first_hexa = text[base + i_block]
+            if(base + i_block + 1 < len(text)):
+                second_hexa = text[base + i_block + 1]
+            block[i][j] = int(first_hexa + second_hexa, 16)
+            i_block += 2
+    return block
 
 def encrypt_block(block, key):
     
@@ -256,10 +256,10 @@ def encrypt(plaintext, key):
     base = 0
     while(base < len(plaintext)):
         block = [
-            [0x00, 0x11, 0x22, 0x33],
-            [0x44, 0x55, 0x66, 0x77],
-            [0x88, 0x99, 0xAA, 0xBB],
-            [0xCC, 0xDD, 0xEE, 0xFF]
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00]
         ]
         block = to_block(block, plaintext, base)
         cyphertext += encrypt_block(block, key)
@@ -277,10 +277,10 @@ def decrypt(ciphertext, key):
     base = 0
     while(base < len(ciphertext)):
         block = [
-            [0x00, 0x11, 0x22, 0x33],
-            [0x44, 0x55, 0x66, 0x77],
-            [0x88, 0x99, 0xAA, 0xBB],
-            [0xCC, 0xDD, 0xEE, 0xFF]
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00],
+            [0x00, 0x00, 0x00, 0x00]
         ]
         block = to_block(block, ciphertext, base)
         plaintext += encrypt_block(block, key)
