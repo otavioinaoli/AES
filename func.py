@@ -38,6 +38,116 @@ INV_MIX_COLUMNS_MATRIX = [
     [0x0B, 0x0D, 0x09, 0x0E]
 ]
 
+def byte_substitution(block):
+    """
+    Applies the AES S-box substitution to every byte in a 4x4 block
+
+    Parameters:
+        block: A 4x4 list containing the bytes of the AES state
+
+    Returns:
+        block: The block after applying the S-box substitution
+    """
+
+    for i in range (4):
+        for j in range (4):
+            block[i][j] = S_BOX[block[i][j]]
+
+    return block
+
+def shiftrows_op(j, i, c):
+    """
+    Calculates the new column position of a byte during ShiftRows
+
+    Parameters:
+        j: original column index of the byte
+        i: row index, which determines the number of positions shifted
+        c: shift direction: 0 for left and 1 for right
+
+    Returns:
+        The new column index of the byte
+    """
+
+    if c == 0:
+        return j - i
+
+    return j + i
+
+def shiftrows(block, c):
+    """
+    Applies the ShiftRows transformation to a 4x4 AES state
+    Each row is cyclically shifted by its row index:
+        row 0 → shifted by 0 positions
+        row 1 → shifted by 1 position
+        row 2 → shifted by 2 positions
+        row 3 → shifted by 3 positions
+
+    Parameters:
+        block: a 4x4 list containing the bytes of the AES state
+        c: the shift direction: 0 for left (encryption) and 1 for right (decryption)
+
+    Returns:
+        y: a new 4x4 block after applying the ShiftRows transformation
+    """
+
+    # Create a copy so that the original block is not modified
+    y = [row[:] for row in block]
+
+    for i in range (4):
+        j = 0
+        for k in range (4):
+            y[i][shiftrows_op(j, i, c) % 4] = block[i][j]
+            j += 1
+
+    return y
+
+#Função que faz multiplicação de 2 elementos
+def matrix_multiplier_aux(element_line, element_column):
+    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
+    e1 = bin(element_line)[2:].zfill(8)
+    e2 = bin(element_column)[2:].zfill(8)
+
+    result = 0
+
+    #Fazendo a multiplicação entre os 2 números
+    for l in range(7, -1, -1):
+        if(e2[l] == '1'):
+            result ^= int(e1, 2) << 7 - l
+
+
+    #polinomio primo m(x) =x8+x4+x3+x+1
+    pp = 0b100011011
+
+    #Realizando a divisão modular do resultado da multiplicação pelo polinomio primo    
+    while result.bit_length() >= pp.bit_length():
+        result ^= pp <<  (result.bit_length() - pp.bit_length())
+        
+    return hex(result)
+
+#Função que faz multiplicação de matrizes     
+def matrix_multiplier(matrix1, matrix2):
+    matrix_result =  [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+    for i in range (4):
+        for j in range (4):
+            for k in range (4):
+                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
+                
+                
+    return matrix_result
+
+def mixcolumm(block, c):
+    if c == 0:
+        return matrix_multiplier(MIX_COLUMNS_MATRIX, block)
+    
+    return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
+
+
+
 def g(W, i_round):
     """
     Applies the g() transformation to a 4-byte word
@@ -111,68 +221,6 @@ def key_expansion(key):
 
     return W
 
-def byte_substitution(block):
-    """
-    Applies the AES S-box substitution to every byte in a 4x4 block
-
-    Parameters:
-        block: A 4x4 list containing the bytes of the AES state
-
-    Returns:
-        block: The block after applying the S-box substitution
-    """
-
-    for i in range (4):
-        for j in range (4):
-            block[i][j] = S_BOX[block[i][j]]
-
-    return block
-
-def shiftrows_op(j, i, c):
-    """
-    Calculates the new column position of a byte during ShiftRows
-
-    Parameters:
-        j: original column index of the byte
-        i: row index, which determines the number of positions shifted
-        c: shift direction: 0 for left and 1 for right
-
-    Returns:
-        The new column index of the byte
-    """
-
-    if c == 0:
-        return j - i
-    else:
-        return j + i
-
-def shiftrows(block, c):
-    """
-    Applies the ShiftRows transformation to a 4x4 AES state
-    Each row is cyclically shifted by its row index:
-        row 0 → shifted by 0 positions
-        row 1 → shifted by 1 position
-        row 2 → shifted by 2 positions
-        row 3 → shifted by 3 positions
-
-    Parameters:
-        block: a 4x4 list containing the bytes of the AES state
-        c: the shift direction: 0 for left (encryption) and 1 for right (decryption)
-
-    Returns:
-        y: a new 4x4 block after applying the ShiftRows transformation
-    """
-
-    # Create a copy so that the original block is not modified
-    y = [row[:] for row in block]
-
-    for i in range (4):
-        j = 0
-        for k in range (4):
-            y[i][shiftrows_op(j, i, c) % 4] = block[i][j]
-            j += 1
-
-    return y
 
 def key_addition(block, round_key):
     """
@@ -193,48 +241,15 @@ def key_addition(block, round_key):
 
     return block
 
-#Função que faz multiplicação de 2 elementos
-def matrix_multiplier_aux(element_line, element_column):
-    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
-    e1 = bin(element_line)[2:].zfill(8)
-    e2 = bin(element_column)[2:].zfill(8)
+def to_text(block):
+    text = ""
+    for j in range (4):
+        for i in range (4):
+            #transforma o block em string o 0 indica oq será preenchido nos espaços vazios e o número de caracteres e o x que deve converter para hexadecimal e minusculo 
+            text += f"{block[i][j]:02x}"
 
-    result = 0
-
-    #Fazendo a multiplicação entre os 2 números
-    for l in range(7, -1, -1):
-        if(e2[l] == '1'):
-            result ^= int(e1, 2) << 7 - l
-
-
-    #polinomio primo m(x) =x8+x4+x3+x+1
-    pp = 0b100011011
-
-    #Realizando a divisão modular do resultado da multiplicação pelo polinomio primo    
-    while result.bit_length() >= pp.bit_length():
-        result ^= pp <<  (result.bit_length() - pp.bit_length())
-        
-    return hex(result)
-
-#Função que faz multiplicação de matrizes     
-def matrix_multiplier(matrix1, matrix2):
-    matrix_result =  [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
-    for i in range (4):
-        for j in range (4):
-            for k in range (4):
-                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
-                
-                
-    return matrix_result
-
-def mixcolumm():
-    return
-
+    return text
+    
 def to_block(block, text, base):
     i_block = 0
     for j in range (4):
@@ -250,8 +265,28 @@ def to_block(block, text, base):
     return block
 
 def encrypt_block(block, key):
-    
-    return block
+    #Gerando as chaves
+    W = key_expansion(key)
+    #round 1
+    block = key_addition(block, W[0:4])
+    block = byte_substitution(block)
+    block = shiftrows(block, 0)
+    block = mixcolumm(block, 0)
+    block = key_addition(block, W[4:8])
+
+    #round 2 a 9
+    for i in range (8, 40, 4):
+        block = byte_substitution(block)
+        block = shiftrows(block, 0)
+        block = mixcolumm(block, 0)
+        block = key_addition(block, W[i : i + 4])
+
+    #round 10
+    block = byte_substitution(block)
+    block = shiftrows(block, 0)
+    block = key_addition(block, W[40 : 44])
+
+    return to_text(block)
 
 def encrypt(plaintext, key):
     cyphertext = ""
@@ -271,8 +306,29 @@ def encrypt(plaintext, key):
     return cyphertext
 
 def decrypt_block(block, key):
+    #Gerando as chaves
+    W = key_expansion(key)
+    #round 1
+    block = key_addition(block, W[40 : 44])
+    block = shiftrows(block, 1)
+    block = byte_substitution(block)
 
-    return
+    #round 2 a 9
+    for i in range (36, 4, -4):
+        block = key_addition(block, W[i : i + 4])
+        block = mixcolumm(block, 1)
+        block = shiftrows(block, 1)
+        block = byte_substitution(block)
+        
+    #round 10
+    block = key_addition(block, W[4:8])
+    block = mixcolumm(block, 1)
+    block = shiftrows(block, 1)
+    block = byte_substitution(block)
+    block = key_addition(block, W[0:4])
+
+    return to_text(block)
+
 
 def decrypt(ciphertext, key):
     plaintext = ""
