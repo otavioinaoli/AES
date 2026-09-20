@@ -20,6 +20,25 @@ S_BOX = [
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 ]
 
+INV_S_BOX = [
+    0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
+    0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
+    0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
+    0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2, 0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25,
+    0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92,
+    0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda, 0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84,
+    0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a, 0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06,
+    0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02, 0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b,
+    0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea, 0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73,
+    0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85, 0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e,
+    0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89, 0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b,
+    0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20, 0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4,
+    0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31, 0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f,
+    0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
+    0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
+    0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
+]
+
 # RC: the 10 round constants used in the AES-128 key expansion
 #     RC[i] = round constant for round i + 1
 RC = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
@@ -38,7 +57,7 @@ INV_MIX_COLUMNS_MATRIX = [
     [0x0B, 0x0D, 0x09, 0x0E]
 ]
 
-def byte_substitution(block):
+def byte_substitution(block, c):
     """
     Applies the AES S-box substitution to every byte in a 4x4 block
 
@@ -51,7 +70,10 @@ def byte_substitution(block):
 
     for i in range (4):
         for j in range (4):
-            block[i][j] = S_BOX[block[i][j]]
+            if(c == 0):
+                block[i][j] = S_BOX[block[i][j]]
+            elif(c == 1):
+                block[i][j] = INV_S_BOX[block[i][j]]
 
     return block
 
@@ -146,8 +168,6 @@ def mixcolumm(block, c):
     
     return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
 
-
-
 def g(W, i_round):
     """
     Applies the g() transformation to a 4-byte word
@@ -158,37 +178,22 @@ def g(W, i_round):
     Returns:
         W: the transformed 4-byte word
     """
-
     # RotWord: rotate the word one byte to the left
-    W = W[1:] + W[:1]
+    W = ((W << 8) | (W >> 24)) & 0xFFFFFFFF
 
     # SubWord: apply the S-box to each byte
-    for i in range (4):
-        W[i] = S_BOX[W[i]]
+    b0 = S_BOX[(W >> 24) & 0xFF]
+    b1 = S_BOX[(W >> 16) & 0xFF]
+    b2 = S_BOX[(W >> 8) & 0xFF]
+    b3 = S_BOX[W & 0xFF]
+
+    W = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
 
     # Round Constant: XOR the first byte with the round constant
-    W[0] = W[0] ^ RC[i_round-1]
+    W ^= RC[i_round - 1] << 24
 
     return W
 
-def xor(w1, w2):
-    """
-    Applies the XOR operation between two 4-byte words
-
-    Parameters:
-        w1: a list containing the first 4-byte word
-        w2: a list containing the second 4-byte word
-
-    Returns:
-        result: a list containing the result of the byte-wise XOR
-    """
-
-    result = [None] * 4
-
-    for i in range(4):
-        result[i] = w1[i] ^ w2[i]
-
-    return result
 
 def key_expansion(key):
     """
@@ -205,22 +210,21 @@ def key_expansion(key):
     W = [None] * 44
 
     # Copy the original key into the first four words
-    W[0] = key[0:4]
-    W[1] = key[4:8]
-    W[2] = key[8:12]
-    W[3] = key[12:16]
+    W[0] = (key >> 96) & 0xFFFFFFFF
+    W[1] = (key >> 64) & 0xFFFFFFFF
+    W[2] = (key >> 32) & 0xFFFFFFFF
+    W[3] = key & 0xFFFFFFFF
 
     # Generate the remaining 40 words
     for i in range(1, 11):
         # The first word of each round key uses the g() transformation before the XOR operation
-        W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1], i))
+        W[4 * i] = W[4 * (i - 1)] ^ g(W[4 * i - 1], i)
 
         # Generate the other three words of the round key
         for j in range(1, 4):
-            W[4 * i + j] = xor(W[4 * i + j - 1], W[4 * (i - 1) + j])
+            W[4 * i + j] = W[4 * i + j - 1] ^ W[4 * (i - 1) + j]
 
     return W
-
 
 def key_addition(block, round_key):
     """
@@ -235,9 +239,11 @@ def key_addition(block, round_key):
         block: the state after applying the AddRoundKey transformation
     """
 
-    for i in range(4):
-        for j in range(4):
-            block[i][j] = block[i][j] ^ round_key[i][j]
+    for j in range(4):
+        block[0][j] ^= (round_key[j] >> 24) & 0xFF
+        block[1][j] ^= (round_key[j] >> 16) & 0xFF
+        block[2][j] ^= (round_key[j] >> 8) & 0xFF
+        block[3][j] ^= round_key[j] & 0xFF
 
     return block
 
@@ -269,20 +275,20 @@ def encrypt_block(block, key):
     W = key_expansion(key)
     #round 1
     block = key_addition(block, W[0:4])
-    block = byte_substitution(block)
+    block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
     block = mixcolumm(block, 0)
     block = key_addition(block, W[4:8])
 
     #round 2 a 9
     for i in range (8, 40, 4):
-        block = byte_substitution(block)
+        block = byte_substitution(block, 0)
         block = shiftrows(block, 0)
         block = mixcolumm(block, 0)
         block = key_addition(block, W[i : i + 4])
 
     #round 10
-    block = byte_substitution(block)
+    block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
     block = key_addition(block, W[40 : 44])
 
@@ -311,20 +317,20 @@ def decrypt_block(block, key):
     #round 1
     block = key_addition(block, W[40 : 44])
     block = shiftrows(block, 1)
-    block = byte_substitution(block)
+    block = byte_substitution(block, 1)
 
     #round 2 a 9
     for i in range (36, 4, -4):
         block = key_addition(block, W[i : i + 4])
         block = mixcolumm(block, 1)
         block = shiftrows(block, 1)
-        block = byte_substitution(block)
+        block = byte_substitution(block, 1)
         
     #round 10
     block = key_addition(block, W[4:8])
     block = mixcolumm(block, 1)
     block = shiftrows(block, 1)
-    block = byte_substitution(block)
+    block = byte_substitution(block, 1)
     block = key_addition(block, W[0:4])
 
     return to_text(block)
@@ -342,7 +348,7 @@ def decrypt(ciphertext, key):
             [0x00, 0x00, 0x00, 0x00]
         ]
         block = to_block(block, ciphertext, base)
-        plaintext += encrypt_block(block, key)
+        plaintext += decrypt_block(block, key)
         base += 32
         
     return plaintext
