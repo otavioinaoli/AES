@@ -77,24 +77,6 @@ def byte_substitution(block, c):
 
     return block
 
-def shiftrows_op(j, i, c):
-    """
-    Calculates the new column position of a byte during ShiftRows
-
-    Parameters:
-        j: original column index of the byte
-        i: row index, which determines the number of positions shifted
-        c: shift direction: 0 for left and 1 for right
-
-    Returns:
-        The new column index of the byte
-    """
-
-    if c == 0:
-        return j - i
-
-    return j + i
-
 def shiftrows(block, c):
     """
     Applies the ShiftRows transformation to a 4x4 AES state
@@ -109,17 +91,19 @@ def shiftrows(block, c):
         c: the shift direction: 0 for left (encryption) and 1 for right (decryption)
 
     Returns:
-        y: a new 4x4 block after applying the ShiftRows transformation
+        A new 4x4 block after applying the ShiftRows transformation
     """
 
-    # Create a copy so that the original block is not modified
     y = [row[:] for row in block]
 
-    for i in range (4):
-        j = 0
-        for k in range (4):
-            y[i][shiftrows_op(j, i, c) % 4] = block[i][j]
-            j += 1
+    for i in range(4):
+        for j in range(4):
+            if c == 0:
+                new_j = (j - i) % 4
+            else:
+                new_j = (j + i) % 4
+
+            y[i][new_j] = block[i][j]
 
     return y
 
@@ -178,22 +162,37 @@ def g(W, i_round):
     Returns:
         W: the transformed 4-byte word
     """
+
     # RotWord: rotate the word one byte to the left
-    W = ((W << 8) | (W >> 24)) & 0xFFFFFFFF
+    W = W[1:] + W[:1]
 
     # SubWord: apply the S-box to each byte
-    b0 = S_BOX[(W >> 24) & 0xFF]
-    b1 = S_BOX[(W >> 16) & 0xFF]
-    b2 = S_BOX[(W >> 8) & 0xFF]
-    b3 = S_BOX[W & 0xFF]
-
-    W = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+    for i in range (4):
+        W[i] = S_BOX[W[i]]
 
     # Round Constant: XOR the first byte with the round constant
-    W ^= RC[i_round - 1] << 24
+    W[0] = W[0] ^ RC[i_round-1]
 
     return W
 
+def xor(w1, w2):
+    """
+    Applies the XOR operation between two 4-byte words
+
+    Parameters:
+        w1: a list containing the first 4-byte word
+        w2: a list containing the second 4-byte word
+
+    Returns:
+        result: a list containing the result of the byte-wise XOR
+    """
+
+    result = [None] * 4
+
+    for i in range(4):
+        result[i] = w1[i] ^ w2[i]
+
+    return result
 
 def key_expansion(key):
     """
@@ -210,19 +209,19 @@ def key_expansion(key):
     W = [None] * 44
 
     # Copy the original key into the first four words
-    W[0] = (key >> 96) & 0xFFFFFFFF
-    W[1] = (key >> 64) & 0xFFFFFFFF
-    W[2] = (key >> 32) & 0xFFFFFFFF
-    W[3] = key & 0xFFFFFFFF
+    W[0] = key[0:4]
+    W[1] = key[4:8]
+    W[2] = key[8:12]
+    W[3] = key[12:16]
 
     # Generate the remaining 40 words
     for i in range(1, 11):
         # The first word of each round key uses the g() transformation before the XOR operation
-        W[4 * i] = W[4 * (i - 1)] ^ g(W[4 * i - 1], i)
+        W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1], i))
 
         # Generate the other three words of the round key
         for j in range(1, 4):
-            W[4 * i + j] = W[4 * i + j - 1] ^ W[4 * (i - 1) + j]
+            W[4 * i + j] = xor(W[4 * i + j - 1], W[4 * (i - 1) + j])
 
     return W
 
@@ -239,66 +238,89 @@ def key_addition(block, round_key):
         block: the state after applying the AddRoundKey transformation
     """
 
-    for j in range(4):
-        block[0][j] ^= (round_key[j] >> 24) & 0xFF
-        block[1][j] ^= (round_key[j] >> 16) & 0xFF
-        block[2][j] ^= (round_key[j] >> 8) & 0xFF
-        block[3][j] ^= round_key[j] & 0xFF
+    for i in range(4):
+        for j in range(4):
+            block[i][j] = block[i][j] ^ round_key[j][i]
 
     return block
 
-def to_text(block):
-    text = ""
-    for j in range (4):
-        for i in range (4):
-            #transforma o block em string o 0 indica oq será preenchido nos espaços vazios e o número de caracteres e o x que deve converter para hexadecimal e minusculo 
-            text += f"{block[i][j]:02x}"
+def to_bytes(block):
+    """
+    Converts a 4x4 AES state into bytes
 
-    return text
+    Parameters:
+        block: a 4x4 list containing the AES state
+
+    Returns:
+        text: the bytes represented by the state
+    """
+
+    text = []
+
+    for j in range(4):
+        for i in range(4):
+            text.append(block[i][j])
+
+    return bytes(text)
     
 def to_block(block, text, base):
+    """
+    Converts 16 bytes of text into a 4x4 AES state.
+
+    Parameters:
+        block: a 4x4 list used to store the AES state
+        text: bytes containing the input data
+        base: starting byte index of the block
+
+    Returns:
+        block: the 4x4 AES state
+    """
+
     i_block = 0
-    for j in range (4):
-        for i in range (4):
-            first_hexa = "0"
-            second_hexa = "0"
-            if(base + i_block < len(text)):
-                first_hexa = text[base + i_block]
-            if(base + i_block + 1 < len(text)):
-                second_hexa = text[base + i_block + 1]
-            block[i][j] = int(first_hexa + second_hexa, 16)
-            i_block += 2
+
+    for j in range(4):
+        for i in range(4):
+            index = base + i_block
+
+            if index < len(text):
+                block[i][j] = text[index]
+            else:
+                block[i][j] = 0
+
+            i_block += 1
+
     return block
 
 def encrypt_block(block, key):
-    #Gerando as chaves
-    W = key_expansion(key)
-    #round 1
+    # Generate the round keys
+    W = key_expansion(list(key))
+
+    # Round 1
     block = key_addition(block, W[0:4])
     block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
     block = mixcolumm(block, 0)
     block = key_addition(block, W[4:8])
 
-    #round 2 a 9
+    # Rounds 2 to 9
     for i in range (8, 40, 4):
         block = byte_substitution(block, 0)
         block = shiftrows(block, 0)
         block = mixcolumm(block, 0)
         block = key_addition(block, W[i : i + 4])
 
-    #round 10
+    # Round 10
     block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
     block = key_addition(block, W[40 : 44])
 
-    return to_text(block)
+    return to_bytes(block)
 
 def encrypt(plaintext, key):
-    cyphertext = ""
-
+    ciphertext = b""
     base = 0
-    while(base < len(plaintext)):
+
+    while base < len(plaintext):
         block = [
             [0x00, 0x00, 0x00, 0x00],
             [0x00, 0x00, 0x00, 0x00],
@@ -306,38 +328,41 @@ def encrypt(plaintext, key):
             [0x00, 0x00, 0x00, 0x00]
         ]
         block = to_block(block, plaintext, base)
-        cyphertext += encrypt_block(block, key)
-        base += 32
 
-    return cyphertext
+        ciphertext += encrypt_block(block, key)
+
+        base += 16
+
+    return bytes(ciphertext)
 
 def decrypt_block(block, key):
-    #Gerando as chaves
-    W = key_expansion(key)
-    #round 1
+    # Generate the round keys
+    W = key_expansion(list(key))
+
+    # Round 1
     block = key_addition(block, W[40 : 44])
     block = shiftrows(block, 1)
     block = byte_substitution(block, 1)
 
-    #round 2 a 9
+    # Rounds 2 to 9
     for i in range (36, 4, -4):
         block = key_addition(block, W[i : i + 4])
         block = mixcolumm(block, 1)
         block = shiftrows(block, 1)
         block = byte_substitution(block, 1)
         
-    #round 10
+    # Round 10
     block = key_addition(block, W[4:8])
     block = mixcolumm(block, 1)
     block = shiftrows(block, 1)
     block = byte_substitution(block, 1)
     block = key_addition(block, W[0:4])
 
-    return to_text(block)
+    return to_bytes(block)
 
 
 def decrypt(ciphertext, key):
-    plaintext = ""
+    plaintext = b""
 
     base = 0
     while(base < len(ciphertext)):
@@ -347,8 +372,11 @@ def decrypt(ciphertext, key):
             [0x00, 0x00, 0x00, 0x00],
             [0x00, 0x00, 0x00, 0x00]
         ]
+
         block = to_block(block, ciphertext, base)
+
         plaintext += decrypt_block(block, key)
-        base += 32
+
+        base += 16
         
-    return plaintext
+    return bytes(plaintext)

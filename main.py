@@ -1,139 +1,163 @@
 # Letícia Ramos e Otávio Inácio - GRUPO 02
-# 
 # AES para chaves de 128 bits
 
 from func import *
 
 def menu():
-    print ("-------------- Bem vindo(a) ao sistema de criptografia baseado no algoritmo AES (Advanced Encryption Standard)! --------------\n" \
-        "1- 🔐 Cifragem\n" \
-        "2- 🔓 Decifragem\n" \
-        "3- 🚪🚶 Sair\n")
+    print("\n-----------------"
+          "\n1- 🔐 Cifragem"
+          "\n2- 🔓 Decifragem"
+          "\n3- 🚪 Sair"
+          "\n-----------------"
+
+    )
 
     mode = -1
-    while mode not in [1,2,3]:
-        mode = int(input("Escolha a opção: "))
+    while mode not in [1, 2, 3]:
+        mode = int(input("\nEscolha a opção: "))
+
+        if mode not in [1, 2, 3]:
+            print("\nOpção inválida!")
 
     return mode
 
+
 def get_key():
-    op = 0
+    op = -1
     key = ""
-    keyInt = 0
 
-    while op not in [1,2]:
-        op = int(input("\nEscolha o formato da sua chave de 128 bits:\n"
-                       "1- String\n" \
-                       "2- Hexadecimal\n" \
-                       "Opção: "))
-        if op not in [1,2]:
-                print ("Opção inválida!")
+    while op not in [1, 2]:
+        print("\nEscolha o formato da sua chave de 128 bits:\n"
+            "1- String\n"
+            "2- Hexadecimal")
+        op = int(input("Opção: "))
 
-    if (op == 1):
-        while (len(key) != 16):
-            key = input("\nDigite uma chave com 128 bits (16 caracteres): ")
-        key = key.encode('ascii').hex()
-    elif (op == 2):
-        while (len(key) != 32):
-            key = input("\nDigite uma chave com 128 bits (32 digitos): ")
+        if op not in [1, 2]:
+            print("\nOpção inválida!")
 
-    return int(key, 16)
+    # chave informada como string
+    if op == 1:
+        while True:
+            key = input("\nInsira a chave de 128 bits (string): ")
 
-def get_text():
-    op = 0
-    text = ""
-    keyInt = 0
+            # validação de tamanho (16 caracteres ASCII = 16 bytes = 128 bits)
+            if len(key) == 16 and key.isascii():
+                break
+            print("\nTamanho inválido! A chave deve possuir exatamente 16 caracteres ASCII.")
 
-    while op not in [1,2]:
-        op = int(input("\nEscolha o formato da sua mensagem:\n"
-                       "1- String\n" \
-                       "2- Hexadecimal\n" \
-                       "Opção: "))
-        if op not in [1,2]:
-                print ("Opção inválida!")
+        # string -> bytes
+        key = key.encode("ascii")
 
-    if (op == 1):
-        text = input("\nEscreva a mensagem a ser cifrada: ")
-        text = text.encode('ascii').hex()
-    elif (op == 2):
-        text = input("\nEscreva a mensagem a ser cifrada: ")
+    # chave informada como hexadecimal
+    else:
+        while True:
+            key = input("\nDigite a chave com 128 bits (hexadecimal): ").lower()
 
-    return text
+            # validação de formato e tamanho (32 dígitos hexadecimais × 4 bits = 128 bits)
+            if len(key) == 32 and all(c in "0123456789abcdef" for c in key):
+                break
 
+            print("Chave inválida! Ela deve possuir exatamente 32 dígitos hexadecimais.")
+
+        key = bytes.fromhex(key)
+
+    return key
 
 def main():
-    mode = menu()
+    print("Bem-vindo(a) ao sistema de criptografia baseado no algoritmo AES (Advanced Encryption Standard)!")
 
-    match mode:
-        case 1:
-            print("-------------- MODO CIFRAGEM --------------")
-            # solicita a mensagem a ser cifrada (texto claro)
-            # solicita a chave de 128 bits e chama o método de cifragem
-            ciphertext = encrypt(get_text(), get_key())
+    while True:
+        mode = menu()
 
-            # escolha do formato da saída
-            out = -1
+        match mode:
+            case 1:
+                print("\n-------------- MODO CIFRAGEM --------------")
 
-            while out not in [1,2]:
-                print("\nEscolha o formato de saída desejado para a mensagem cifrada:")
-                print("1- Hexadecimal\n" \
-                      "2- Decimal")
-                out = int(input("Opção: "))
-                if (out not in [1,2]):
-                    print("Opção inválida!")
+                # solicita a mensagem a ser cifrada
+                plaintext = input("\nInsira a mensagem a ser cifrada (string): ")
 
-            print("\nCriptografando...\n")
+                # string -> bytes
+                plaintext = plaintext.encode("utf-8")
 
-            # retorna a mensagem criptografada em hexadecimal
-            if out == 1:
-                print(f"Mensagem cifrada (hexadecimal): {ciphertext}")
+                # solicita a chave e chama o método de cifragem
+                ciphertext = encrypt(plaintext, get_key())
 
-            # retorna a mensagem criptografada em decimal
-            else:
+                # escolha do formato da saída
+                out = -1
+                while out not in [1, 2]:
+                    print("\nEscolha o formato de saída desejado para a mensagem cifrada:"
+                        "\n1- Hexadecimal"
+                        "\n2- Decimal")
+                    out = int(input("Opção: "))
 
-                dec = ... # ******* HEXA ----> DECIMAL
+                    if out not in [1, 2]:
+                        print("Opção inválida!")
 
-                print(f"Mensagem cifrada (decimal): {dec}")
+                print("\nCriptografando...\n")
+
+                # saída em hexadecimal
+                if out == 1:
+                    print(f"Mensagem cifrada (hexadecimal): {ciphertext.hex()}")
+
+                # saída em decimal
+                else:
+                    dec = int.from_bytes(ciphertext, byteorder="big")
+                    print(f"Mensagem cifrada (decimal): {dec}")
 
 
-        case 2:
-            print("-------------- MODO DECIFRAGEM --------------")
+            case 2:
+                print("\n-------------- MODO DECIFRAGEM --------------")
 
-            # solicita a mensagem a ser decifrada
-            ciphertext = input("\nEscreva a mensagem a ser decifrada (formato hexadecimal): ")
+                # escolha do formato da mensagem cifrada
+                op = -1
 
-            # solicita a chave de 128 bits e chama o método de decifragem
-            text = decrypt(ciphertext, get_key())
+                while op not in [1, 2]:
+                    print("\nEscolha o formato da mensagem cifrada:\n"
+                        "1- Decimal\n"
+                        "2- Hexadecimal")
 
-            # escolha do formato da saída
-            out = -1
+                    op = int(input("Opção: "))
 
-            while out not in [1,2]:
-                print("\nEscolha o formato de saída desejado para a mensagem cifrada:")
-                print("1- String\n" \
-                      "2- Hexadecimal")
-                out = int(input("Opção: "))
-                if (out not in [1,2]):
-                    print("Opção inválida!")
+                    if op not in [1, 2]:
+                        print("Opção inválida!")
 
-            print("\nDescriptografando...\n")
+                ciphertext = input("\nInsira a mensagem cifrada: ")
 
-            # retorna a mensagem criptografada em hexadecimal
-            if out == 1:
+                if op == 1:
+                    # decimal -> bytes
+                    ciphertext = int(ciphertext).to_bytes(16, byteorder="big")
+                else:
+                    # hxadecimal -> bytes
+                    ciphertext = bytes.fromhex(ciphertext)
 
-                string = bytes.fromhex(text).decode('ascii')
+                # solicita a chave e chama o método de decifragem
+                deciphered_text = decrypt(ciphertext, get_key())
 
-                print(f"Mensagem decifrada (string): {string}")
+                # escolha do formato da saída
+                out = -1
+                while out not in [1, 2]:
+                    print("\nEscolha o formato de saída desejado para a mensagem decifrada:"
+                        "\n1- String"
+                        "\n2- Hexadecimal")
 
-            # retorna a mensagem criptografada em decimal
-            else:
-                print(f"Mensagem decifrada (hexadecimal): {text}")
+                    out = int(input("Opção: "))
 
-        case 3:
-            print("Saindo...")
+                    if out not in [1, 2]:
+                        print("Opção inválida!")
 
-        case _:
-            print("Opção inválida")
+                print("\nDescriptografando...\n")
+
+                # saída como string
+                if out == 1:
+                    print(f"Mensagem decifrada (string): {deciphered_text.decode("utf-8")}")
+
+                # saída em hexadecimal
+                else:
+                    print(f"Mensagem decifrada (hexadecimal): {deciphered_text.hex()}")
+
+            case 3:
+                print("Saindo...")
+                break
 
 
 if __name__ == "__main__":
