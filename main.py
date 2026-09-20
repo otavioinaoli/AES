@@ -6,9 +6,9 @@ from func import *
 
 def menu():
     print ("-------------- Bem vindo(a) ao sistema de criptografia baseado no algoritmo AES (Advanced Encryption Standard)! --------------\n" \
-        "1- 🔐 Cifragem\n " \
+        "1- 🔐 Cifragem\n" \
         "2- 🔓 Decifragem\n" \
-        "3- 🚶🏻‍♂️‍➡️🚪Sair\n")
+        "3- 🚪🚶 Sair\n")
 
     mode = -1
     while mode not in [1,2,3]:
@@ -18,6 +18,8 @@ def menu():
 
 def get_key():
     op = 0
+    key = ""
+    keyInt = 0
 
     while op not in [1,2]:
         op = int(input("\nEscolha o formato da sua chave de 128 bits:\n"
@@ -30,11 +32,12 @@ def get_key():
     if (op == 1):
         while (len(key) != 16):
             key = input("\nDigite uma chave com 128 bits (16 caracteres): ")
+        key = key.encode('ascii').hex()
     elif (op == 2):
         while (len(key) != 32):
             key = input("\nDigite uma chave com 128 bits (32 digitos): ")
 
-    return key
+    return int(key, 16)
 
 
 def main():
@@ -54,7 +57,7 @@ def main():
 
             while out not in [1,2]:
                 print("\nEscolha o formato de saída desejado para a mensagem cifrada:")
-                print("1- Hexadecimal\n " \
+                print("1- Hexadecimal\n" \
                       "2- Decimal")
                 out = int(input("Opção: "))
                 if (out not in [1,2]):
@@ -81,14 +84,14 @@ def main():
             ciphertext = input("\nEscreva a mensagem a ser decifrada: ")
 
             # solicita a chave de 128 bits e chama o método de decifragem
-            text = decrypt(plaintext, get_key())
+            text = decrypt(ciphertext, get_key())
 
             # escolha do formato da saída
             out = -1
 
             while out not in [1,2]:
                 print("\nEscolha o formato de saída desejado para a mensagem cifrada:")
-                print("1- String\n " \
+                print("1- String\n" \
                       "2- Hexadecimal")
                 out = int(input("Opção: "))
                 if (out not in [1,2]):
@@ -99,7 +102,7 @@ def main():
             # retorna a mensagem criptografada em hexadecimal
             if out == 1:
 
-                string = ... # ****** HEXA ---> STRING
+                string = bytes.fromhex(text).decode('ascii')
 
                 print(f"Mensagem decifrada (string): {string}")
 
