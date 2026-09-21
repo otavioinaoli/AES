@@ -32,9 +32,7 @@ def menu():
           "\n1- 🔐 Cifragem"
           "\n2- 🔓 Decifragem"
           "\n3- 🚪 Sair"
-          "\n-----------------"
-
-    )
+          "\n-----------------")
 
     mode = -1
     while mode not in [1, 2, 3]:

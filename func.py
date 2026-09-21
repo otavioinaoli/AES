@@ -57,171 +57,6 @@ INV_MIX_COLUMNS_MATRIX = [
     [0x0B, 0x0D, 0x09, 0x0E]
 ]
 
-def byte_substitution(block, c):
-    """
-    Aplica a substituição S-box da AES a cada byte de um bloco 4x4.
-
-    Parâmetros:
-        block: lista 4x4 contendo os bytes do estado AES
-
-    Retorna:
-        block: bloco após aplicar a substituição S-box
-    """
-
-    for i in range (4):
-        for j in range (4):
-            if(c == 0):
-                block[i][j] = S_BOX[block[i][j]]
-            elif(c == 1):
-                block[i][j] = INV_S_BOX[block[i][j]]
-
-    return block
-
-def shiftrows(block, c):
-    """
-    Aplica a transformação ShiftRows a um estado AES 4x4.
-    Cada linha é deslocada ciclicamente de acordo com seu índice:
-        linha 0 → deslocada 0 posições
-        linha 1 → deslocada 1 posição
-        linha 2 → deslocada 2 posições
-        linha 3 → deslocada 3 posições
-
-    Parâmetros:
-        block: lista 4x4 contendo os bytes do estado AES
-        c: direção do deslocamento: 0 para a esquerda (criptografia) e 1 para a direita (descriptografia)
-
-    Retorna:
-        y: novo bloco 4x4 após aplicar a transformação
-    """
-
-    y = [row[:] for row in block]
-
-    for i in range(4):
-        for j in range(4):
-            if c == 0:
-                new_j = (j - i) % 4
-            else:
-                new_j = (j + i) % 4
-
-            y[i][new_j] = block[i][j]
-
-    return y
-
-def matrix_multiplier_aux(element_line, element_column):
-    """
-    Multiplica dois elementos do corpo finito da AES em GF(2^8) usando o polinômio irredutível.
-
-    Parâmetros:
-        element_line: o primeiro elemento a ser multiplicado
-        element_column: o segundo elemento a ser multiplicado
-
-    Retorna:
-        result: o produto representado como valor hexadecimal
-    """
-
-    e1 = bin(element_line)[2:].zfill(8)
-    e2 = bin(element_column)[2:].zfill(8)
-
-    result = 0
-
-    for l in range(7, -1, -1):
-        if(e2[l] == '1'):
-            result ^= int(e1, 2) << 7 - l
-
-    # Polinomio primo m(x) = x^8 + x^4 + x^3 + x + 1
-    pp = 0b100011011
-
-    while result.bit_length() >= pp.bit_length():
-        result ^= pp << (result.bit_length() - pp.bit_length())
-
-    return hex(result)
-
-
-def matrix_multiplier(matrix1, matrix2):
-    """
-    Multiplica duas matrizes 4x4 sobre o corpo finito da AES.
-
-    Parâmetros:
-        matrix1: matriz da esquerda
-        matrix2: matriz da direita
-
-    Retorna:
-        matrix_result: a matriz produto
-    """
-
-    matrix_result = [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0]
-        ]
-    for i in range (4):
-        for j in range (4):
-            for k in range (4):
-                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
-
-    return matrix_result
-
-def mixcolumm(block, c):
-    """
-    Aplica a transformação MixColumns a um estado AES 4x4.
-
-    Parâmetros:
-        block: a matriz atual do estado AES
-        c: seletor de direção, em que 0 aplica o MixColumns padrão e
-           1 aplica a transformação inversa MixColumns
-
-    Retorna:
-        block: o estado após a operação MixColumns
-    """
-
-    if c == 0:
-        return matrix_multiplier(MIX_COLUMNS_MATRIX, block)
-
-    return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
-
-def g(W, i_round):
-    """
-    Aplica a função g() em uma palavra de 4 bytes.
-
-    Parâmetros:
-        W: uma lista com uma palavra de 4 bytes
-        i_round: índice da rodada, começando em 1
-    Retorna:
-        W: a palavra transformada
-    """
-
-    # RotWord: rotaciona a palavra um byte para a esquerda
-    W = W[1:] + W[:1]
-
-    # SubWord: aplica a S-box a cada byte
-    for i in range (4):
-        W[i] = S_BOX[W[i]]
-
-    # Round Constant: faz XOR do primeiro byte com a constante da rodada
-    W[0] = W[0] ^ RC[i_round-1]
-
-    return W
-
-def xor(w1, w2):
-    """
-    Aplica a operação XOR entre duas palavras de 4 bytes.
-
-    Parâmetros:
-        w1: lista contendo a primeira palavra de 4 bytes
-        w2: lista contendo a segunda palavra de 4 bytes
-
-    Retorna:
-        result: lista contendo o resultado do XOR byte a byte
-    """
-
-    result = [None] * 4
-
-    for i in range(4):
-        result[i] = w1[i] ^ w2[i]
-
-    return result
-
 def key_expansion(key):
     """
     Expande a chave AES de 128 bits em 44 words, agrupadas em 11 chaves de rodada, com 4 words por chave
@@ -272,6 +107,178 @@ def key_addition(block, round_key):
 
     return block
 
+def byte_substitution(block, c):
+    """
+    Aplica a substituição S-box da AES a cada byte de um bloco 4x4.
+
+    Parâmetros:
+        block: lista 4x4 contendo os bytes do estado AES
+
+    Retorna:
+        block: bloco após aplicar a substituição S-box
+    """
+
+    for i in range (4):
+        for j in range (4):
+            if(c == 0): # cifragem
+                block[i][j] = S_BOX[block[i][j]]
+            elif(c == 1): # decifragem
+                block[i][j] = INV_S_BOX[block[i][j]]
+
+    return block
+
+def shiftrows(block, c):
+    """
+    Aplica a transformação ShiftRows a um estado AES 4x4.
+    Cada linha é deslocada ciclicamente de acordo com seu índice:
+        linha 0 → deslocada 0 posições
+        linha 1 → deslocada 1 posição
+        linha 2 → deslocada 2 posições
+        linha 3 → deslocada 3 posições
+
+    Parâmetros:
+        block: lista 4x4 contendo os bytes do estado AES
+        c: direção do deslocamento: 0 para a esquerda (criptografia) e 1 para a direita (descriptografia)
+
+    Retorna:
+        y: novo bloco 4x4 após aplicar a transformação
+    """
+
+    y = [row[:] for row in block]
+
+    for i in range(4):
+        for j in range(4):
+            if c == 0: # cifragen
+                new_j = (j - i) % 4
+            else: # decifragem
+                new_j = (j + i) % 4
+
+            y[i][new_j] = block[i][j]
+
+    return y
+
+def matrix_multiplier_aux(element_line, element_column):
+    """
+    Multiplica dois elementos do corpo finito da AES em GF(2^8) usando o polinômio irredutível.
+
+    Parâmetros:
+        element_line: o primeiro elemento a ser multiplicado
+        element_column: o segundo elemento a ser multiplicado
+
+    Retorna:
+        result: o produto representado como valor hexadecimal
+    """
+
+    e1 = bin(element_line)[2:].zfill(8)
+    e2 = bin(element_column)[2:].zfill(8)
+
+    result = 0
+
+    # Se o bit atual de e2 for 1, adiciona e1 deslocado
+    # para a posição correspondente
+    for l in range(7, -1, -1):
+        if(e2[l] == '1'):
+            result ^= int(e1, 2) << 7 - l
+
+    # Polinomio primo 
+    # m(x) = x^8 + x^4 + x^3 + x + 1
+    pp = 0b100011011
+
+    # Enquanto o resultado tiver grau maior ou igual ao polinômio
+    # usado na redução, realiza a divisão polinomial usando XOR
+    while result.bit_length() >= pp.bit_length():
+        result ^= pp << (result.bit_length() - pp.bit_length())
+
+    return hex(result)
+
+
+def matrix_multiplier(matrix1, matrix2):
+    """
+    Multiplica duas matrizes 4x4 sobre o corpo finito da AES.
+
+    Parâmetros:
+        matrix1: matriz da esquerda
+        matrix2: matriz da direita
+
+    Retorna:
+        matrix_result: a matriz produto
+    """
+
+    matrix_result = [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0]
+        ]
+    for i in range (4):
+        for j in range (4):
+            for k in range (4):
+                matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
+
+    return matrix_result
+
+def mixcolumm(block, c):
+    """
+    Aplica a transformação MixColumns a um estado AES 4x4.
+
+    Parâmetros:
+        block: a matriz atual do estado AES
+        c: seletor de direção, em que 0 aplica o MixColumns padrão e
+           1 aplica a transformação inversa MixColumns
+
+    Retorna:
+        block: o estado após a operação MixColumns
+    """
+
+    if c == 0: # cifragem
+        return matrix_multiplier(MIX_COLUMNS_MATRIX, block)
+
+    # decifragem
+    return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
+
+def g(W, i_round):
+    """
+    Aplica a função g() em uma palavra de 4 bytes.
+
+    Parâmetros:
+        W: uma lista com uma palavra de 4 bytes
+        i_round: índice da rodada, começando em 1
+    Retorna:
+        W: a palavra transformada
+    """
+
+    # RotWord: rotaciona a palavra um byte para a esquerda
+    W = W[1:] + W[:1]
+
+    # SubWord: aplica a S-box a cada byte
+    for i in range (4):
+        W[i] = S_BOX[W[i]]
+
+    # Round Constant: faz XOR do primeiro byte com a constante da rodada
+    W[0] = W[0] ^ RC[i_round-1]
+
+    return W
+
+def xor(w1, w2):
+    """
+    Aplica a operação XOR entre duas palavras de 4 bytes.
+
+    Parâmetros:
+        w1: lista contendo a primeira palavra de 4 bytes
+        w2: lista contendo a segunda palavra de 4 bytes
+
+    Retorna:
+        result: lista contendo o resultado do XOR byte a byte
+    """
+
+    result = [None] * 4
+
+    for i in range(4):
+        result[i] = w1[i] ^ w2[i]
+
+    return result
+
+
 def pad(text):
     """
     Adiciona padding PKCS#7 para que o tamanho do texto seja múltiplo de 16 bytes.
@@ -283,8 +290,19 @@ def pad(text):
         text: bytes com padding
     """
 
+    # calcula o quanto falta para completar o bloco 
     padding_size = 16 - (len(text) % 16)
-    return text + bytes([padding_size]) * padding_size
+
+    # adiciona ao texto o valor do padding repetido padding_size vezes 
+    # (se o texto já for múltiplo de 16, adiciona um bloco inteiro de padding)
+    text = text + bytes([padding_size]) * padding_size
+
+    # ex.: len(text) = 17
+    # padding_size = 16 - (17 % 16) = 15
+    # bytes([15]) = 0F
+    # text + 0F (x15)
+
+    return text
 
 
 def unpad(text):
@@ -298,10 +316,10 @@ def unpad(text):
         text: bytes originais sem o padding PKCS#7, se for válido
     """
 
-    if not text:
-        return text
-
+    # último elemento informa o tamanho do padding
     padding_size = text[-1]
+
+    # verifica se os últimos bytes realmente são o padding e remove
     if 1 <= padding_size <= 16 and text.endswith(bytes([padding_size]) * padding_size):
         return text[:-padding_size]
 
@@ -331,8 +349,8 @@ def to_block(block, text, base):
     Converte 16 bytes de texto em um estado AES 4x4.
 
     Parâmetros:
-        block: lista 4x4 usada para armazenar o estado AES
-        text: bytes contendo os dados de entrada
+        block: lista 4x4 com o estado AES
+        text: bytes com os dados de entrada
         base: índice inicial do bloco em bytes
 
     Retorna:
@@ -343,10 +361,7 @@ def to_block(block, text, base):
 
     for j in range(4):
         for i in range(4):
-            index = base + i_block
-
-            block[i][j] = text[index]
-
+            block[i][j] = text[base + i_block]
             i_block += 1
 
     return block
@@ -363,6 +378,7 @@ def encrypt_block(block, key):
         cipher_block: bloco criptografado de 16 bytes
     """
 
+    # lista das 44 words de 4 bytes
     W = key_expansion(list(key))
 
     # Round 1
@@ -373,16 +389,16 @@ def encrypt_block(block, key):
     block = key_addition(block, W[4:8])
 
     # Rounds 2 to 9
-    for i in range (8, 40, 4):
+    for i in range (8, 40, 4): # i começa em 8 e pula de 4 em 4 words
         block = byte_substitution(block, 0)
         block = shiftrows(block, 0)
         block = mixcolumm(block, 0)
-        block = key_addition(block, W[i : i + 4])
+        block = key_addition(block, W[i : i+4])
 
     # Round 10
     block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
-    block = key_addition(block, W[40 : 44])
+    block = key_addition(block, W[40 : 44]) # última word
 
     return to_bytes(block)
 
@@ -398,9 +414,13 @@ def encrypt(plaintext, key):
         ciphertext: bytes criptografados
     """
 
+    # insere o padding no texto claro
     plaintext = pad(plaintext)
 
+    # cria uma sequência vazia de bytes
     ciphertext = b""
+
+    # indica o início do bloco de 16 bytes atual
     base = 0
 
     while base < len(plaintext):
@@ -411,12 +431,10 @@ def encrypt(plaintext, key):
             [0x00, 0x00, 0x00, 0x00]
         ]
         block = to_block(block, plaintext, base)
-
         ciphertext += encrypt_block(block, key)
-
         base += 16
 
-    return bytes(ciphertext)
+    return ciphertext
 
 def decrypt_block(block, key):
     """
@@ -433,12 +451,12 @@ def decrypt_block(block, key):
     W = key_expansion(list(key))
 
     # Round 1
-    block = key_addition(block, W[40 : 44])
+    block = key_addition(block, W[40 : 44]) # começa usando a última word
     block = shiftrows(block, 1)
     block = byte_substitution(block, 1)
 
     # Rounds 2 to 9
-    for i in range (36, 4, -4):
+    for i in range (36, 4, -4): # i começa em 36 e diminui de 4 em 4
         block = key_addition(block, W[i : i + 4])
         block = mixcolumm(block, 1)
         block = shiftrows(block, 1)
@@ -476,11 +494,9 @@ def decrypt(ciphertext, key):
             [0x00, 0x00, 0x00, 0x00],
             [0x00, 0x00, 0x00, 0x00]
         ]
-
         block = to_block(block, ciphertext, base)
-
         plaintext += decrypt_block(block, key)
-
         base += 16
-        
+
+    # retorna o texto claro com o padding removido, se houver
     return unpad(plaintext)
