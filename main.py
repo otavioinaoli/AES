@@ -59,12 +59,12 @@ def get_key():
         if op not in [1, 2]:
             print("\nOpção inválida!")
 
-    # key provided as a string
+    # chave informada como string
     if op == 1:
         while True:
             key = input("\nInsira a chave de 128 bits (string): ")
 
-            # size validation (16 ASCII characters = 16 bytes = 128 bits)
+            # validação de tamanho (16 caracteres ASCII = 16 bytes = 128 bits)
             if len(key) == 16 and key.isascii():
                 break
             print("\nTamanho inválido! A chave deve possuir exatamente 16 caracteres ASCII.")
@@ -72,12 +72,12 @@ def get_key():
         # string -> bytes
         key = key.encode("ascii")
 
-    # key provided as hexadecimal
+    # chave informada como hexadecimal
     else:
         while True:
             key = input("\nDigite a chave com 128 bits (hexadecimal): ").lower()
 
-            # format and size validation (32 hexadecimal digits × 4 bits = 128 bits)
+            # validação de formato e tamanho (32 dígitos hexadecimais × 4 bits = 128 bits)
             if len(key) == 32 and all(c in "0123456789abcdef" for c in key):
                 break
 
@@ -97,16 +97,16 @@ def main():
             case 1:
                 print("\n-------------- MODO CIFRAGEM --------------")
 
-                # request the message to be encrypted
+                # solicita a mensagem a ser cifrada
                 plaintext = input("\nInsira a mensagem a ser cifrada (string): ")
 
                 # string -> bytes
                 plaintext = plaintext.encode("utf-8")
 
-                # request the key and call the encryption method
+                # solicita a chave e chama o método de cifragem
                 ciphertext = encrypt(plaintext, get_key())
 
-                # choose the output format
+                # escolhe o formato da saída
                 out = -1
                 while out not in [1, 2]:
                     print("\nEscolha o formato de saída desejado para a mensagem cifrada:"
@@ -119,11 +119,11 @@ def main():
 
                 print("\nCriptografando...\n")
 
-                # output in hexadecimal
+                # saída em hexadecimal
                 if out == 1:
                     print(f"Mensagem cifrada (hexadecimal): {ciphertext.hex().upper()}")
 
-                # output in decimal
+                # saída em decimal
                 else:
                     dec = int.from_bytes(ciphertext, byteorder="big")
                     print(f"Mensagem cifrada (decimal): {dec}")
@@ -132,7 +132,7 @@ def main():
             case 2:
                 print("\n-------------- MODO DECIFRAGEM --------------")
 
-                # choose the ciphertext format
+                # escolhe o formato da mensagem cifrada
                 op = -1
 
                 while op not in [1, 2]:
@@ -157,10 +157,10 @@ def main():
                     # hexadecimal -> bytes
                     ciphertext = bytes.fromhex(ciphertext)
 
-                # request the key and call the decryption method
+                # solicita a chave e chama o método de decifragem
                 deciphered_text = decrypt(ciphertext, get_key())
 
-                # choose the output format
+                # escolhe o formato da saída
                 out = -1
                 while out not in [1, 2]:
                     print("\nEscolha o formato de saída desejado para a mensagem decifrada:"
@@ -174,11 +174,11 @@ def main():
 
                 print("\nDescriptografando...\n")
 
-                # output as a string
+                # saída como string
                 if out == 1:
                     print(f"Mensagem decifrada (string): {deciphered_text.decode('utf-8')}")
 
-                # output in hexadecimal
+                # saída em hexadecimal
                 else:
                     print(f"Mensagem decifrada (hexadecimal): {deciphered_text.hex().upper()}")
 

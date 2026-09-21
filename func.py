@@ -59,13 +59,13 @@ INV_MIX_COLUMNS_MATRIX = [
 
 def byte_substitution(block, c):
     """
-    Applies the AES S-box substitution to every byte in a 4x4 block
+    Aplica a substituição S-box da AES a cada byte de um bloco 4x4.
 
-    Parameters:
-        block: A 4x4 list containing the bytes of the AES state
+    Parâmetros:
+        block: lista 4x4 contendo os bytes do estado AES
 
-    Returns:
-        block: The block after applying the S-box substitution
+    Retorna:
+        block: bloco após aplicar a substituição S-box
     """
 
     for i in range (4):
@@ -79,19 +79,19 @@ def byte_substitution(block, c):
 
 def shiftrows(block, c):
     """
-    Applies the ShiftRows transformation to a 4x4 AES state
-    Each row is cyclically shifted by its row index:
-        row 0 → shifted by 0 positions
-        row 1 → shifted by 1 position
-        row 2 → shifted by 2 positions
-        row 3 → shifted by 3 positions
+    Aplica a transformação ShiftRows a um estado AES 4x4.
+    Cada linha é deslocada ciclicamente de acordo com seu índice:
+        linha 0 → deslocada 0 posições
+        linha 1 → deslocada 1 posição
+        linha 2 → deslocada 2 posições
+        linha 3 → deslocada 3 posições
 
-    Parameters:
-        block: a 4x4 list containing the bytes of the AES state
-        c: the shift direction: 0 for left (encryption) and 1 for right (decryption)
+    Parâmetros:
+        block: lista 4x4 contendo os bytes do estado AES
+        c: direção do deslocamento: 0 para a esquerda (criptografia) e 1 para a direita (descriptografia)
 
-    Returns:
-        A new 4x4 block after applying the ShiftRows transformation
+    Retorna:
+        y: novo bloco 4x4 após aplicar a transformação
     """
 
     y = [row[:] for row in block]
@@ -109,14 +109,14 @@ def shiftrows(block, c):
 
 def matrix_multiplier_aux(element_line, element_column):
     """
-    Multiplies two AES field elements in GF(2^8) using the irreducible polynomial
+    Multiplica dois elementos do corpo finito da AES em GF(2^8) usando o polinômio irredutível.
 
-    Parameters:
-        element_line: the first element to multiply
-        element_column: the second element to multiply
+    Parâmetros:
+        element_line: o primeiro elemento a ser multiplicado
+        element_column: o segundo elemento a ser multiplicado
 
-    Returns:
-        result: the product represented as a hexadecimal value
+    Retorna:
+        result: o produto representado como valor hexadecimal
     """
 
     e1 = bin(element_line)[2:].zfill(8)
@@ -139,14 +139,14 @@ def matrix_multiplier_aux(element_line, element_column):
 
 def matrix_multiplier(matrix1, matrix2):
     """
-    Multiplies two 4x4 matrices over the AES finite field.
+    Multiplica duas matrizes 4x4 sobre o corpo finito da AES.
 
-    Parameters:
-        matrix1: the left matrix
-        matrix2: the right matrix
+    Parâmetros:
+        matrix1: matriz da esquerda
+        matrix2: matriz da direita
 
-    Returns:
-        matrix_result: the product matrix
+    Retorna:
+        matrix_result: a matriz produto
     """
 
     matrix_result = [
@@ -164,15 +164,15 @@ def matrix_multiplier(matrix1, matrix2):
 
 def mixcolumm(block, c):
     """
-    Applies the MixColumns transformation to a 4x4 AES state.
+    Aplica a transformação MixColumns a um estado AES 4x4.
 
-    Parameters:
-        block: the current AES state matrix
-        c: direction selector, where 0 applies the standard MixColumns and
-           1 applies the inverse MixColumns transformation
+    Parâmetros:
+        block: a matriz atual do estado AES
+        c: seletor de direção, em que 0 aplica o MixColumns padrão e
+           1 aplica a transformação inversa MixColumns
 
-    Returns:
-        block: the state after the MixColumns operation
+    Retorna:
+        block: o estado após a operação MixColumns
     """
 
     if c == 0:
@@ -182,37 +182,37 @@ def mixcolumm(block, c):
 
 def g(W, i_round):
     """
-    Applies the g() transformation to a 4-byte word
+    Aplica a função g() em uma palavra de 4 bytes.
 
-    Parameters:
-        W: a list with a 4-byte word
-        i_round: the 1-based index of the round
-    Returns:
-        W: the transformed 4-byte word
+    Parâmetros:
+        W: uma lista com uma palavra de 4 bytes
+        i_round: índice da rodada, começando em 1
+    Retorna:
+        W: a palavra transformada
     """
 
-    # RotWord: rotate the word one byte to the left
+    # RotWord: rotaciona a palavra um byte para a esquerda
     W = W[1:] + W[:1]
 
-    # SubWord: apply the S-box to each byte
+    # SubWord: aplica a S-box a cada byte
     for i in range (4):
         W[i] = S_BOX[W[i]]
 
-    # Round Constant: XOR the first byte with the round constant
+    # Round Constant: faz XOR do primeiro byte com a constante da rodada
     W[0] = W[0] ^ RC[i_round-1]
 
     return W
 
 def xor(w1, w2):
     """
-    Applies the XOR operation between two 4-byte words
+    Aplica a operação XOR entre duas palavras de 4 bytes.
 
-    Parameters:
-        w1: a list containing the first 4-byte word
-        w2: a list containing the second 4-byte word
+    Parâmetros:
+        w1: lista contendo a primeira palavra de 4 bytes
+        w2: lista contendo a segunda palavra de 4 bytes
 
-    Returns:
-        result: a list containing the result of the byte-wise XOR
+    Retorna:
+        result: lista contendo o resultado do XOR byte a byte
     """
 
     result = [None] * 4
@@ -224,30 +224,30 @@ def xor(w1, w2):
 
 def key_expansion(key):
     """
-    Expands the 128-bit AES key into 44 words, grouped into 11 round keys, with 4 words per round key
-    Each word contains 4 bytes
+    Expande a chave AES de 128 bits em 44 words, agrupadas em 11 chaves de rodada, com 4 words por chave
+    Cada palavra contém 4 bytes
 
-    Parameters:
-        key: a list containing the 16 bytes of the original AES-128 key
+    Parâmetros:
+        key: lista contendo os 16 bytes da chave original AES-128
 
-    Returns:
-        W: a list containing the 44 expanded key words
+    Retorna:
+        W: lista contendo as 44 words expandidas da chave
     """
 
     W = [None] * 44
 
-    # Copy the original key into the first four words
+    # Copia a chave original para as quatro primeiras words
     W[0] = key[0:4]
     W[1] = key[4:8]
     W[2] = key[8:12]
     W[3] = key[12:16]
 
-    # Generate the remaining 40 words
+    # Gera as 40 words restantes
     for i in range(1, 11):
-        # The first word of each round key uses the g() transformation before the XOR operation
+        # A primeira word de cada chave de rodada usa g() antes da operação XOR
         W[4 * i] = xor(W[4 * (i - 1)], g(W[4 * i - 1], i))
 
-        # Generate the other three words of the round key
+        # Gera as outras três palavras da chave de rodada
         for j in range(1, 4):
             W[4 * i + j] = xor(W[4 * i + j - 1], W[4 * (i - 1) + j])
 
@@ -255,15 +255,15 @@ def key_expansion(key):
 
 def key_addition(block, round_key):
     """
-    Applies the AddRoundKey transformation by XORing each byte
-    of the state with the corresponding byte of the round key
+    Aplica a transformação AddRoundKey fazendo XOR de cada byte
+    do estado com o byte correspondente da chave de rodada.
 
-    Parameters:
-        block: a 4x4 list containing the bytes of the AES state
-        round_key: a 4x4 list containing the bytes of the round key
+    Parâmetros:
+        block: lista 4x4 contendo os bytes do estado AES
+        round_key: lista 4x4 contendo os bytes da chave de rodada
 
-    Returns:
-        block: the state after applying the AddRoundKey transformation
+    Retorna:
+        block: o estado após aplicar a transformação AddRoundKey
     """
 
     for i in range(4):
@@ -274,13 +274,13 @@ def key_addition(block, round_key):
 
 def pad(text):
     """
-    Adds PKCS#7 padding so that the text length is a multiple of 16 bytes
+    Adiciona padding PKCS#7 para que o tamanho do texto seja múltiplo de 16 bytes.
 
-    Parameters:
-        text: bytes to be padded
+    Parâmetros:
+        text: bytes a serem preenchidos
 
-    Returns:
-        text: padded bytes
+    Retorna:
+        text: bytes com padding
     """
 
     padding_size = 16 - (len(text) % 16)
@@ -289,13 +289,13 @@ def pad(text):
 
 def unpad(text):
     """
-    Removes PKCS#7 padding from the text when present
+    Remove o padding PKCS#7 do texto quando ele estiver presente.
 
-    Parameters:
-        text: padded bytes
+    Parâmetros:
+        text: bytes com padding
 
-    Returns:
-        text: original bytes without PKCS#7 padding if it is valid
+    Retorna:
+        text: bytes originais sem o padding PKCS#7, se for válido
     """
 
     if not text:
@@ -309,13 +309,13 @@ def unpad(text):
 
 def to_bytes(block):
     """
-    Converts a 4x4 AES state into bytes
+    Converte um estado AES 4x4 em bytes.
 
-    Parameters:
-        block: a 4x4 list containing the AES state
+    Parâmetros:
+        block: lista 4x4 contendo o estado AES
 
-    Returns:
-        text: the bytes represented by the state
+    Retorna:
+        text: os bytes representados pelo estado
     """
 
     text = []
@@ -328,15 +328,15 @@ def to_bytes(block):
     
 def to_block(block, text, base):
     """
-    Converts 16 bytes of text into a 4x4 AES state
+    Converte 16 bytes de texto em um estado AES 4x4.
 
-    Parameters:
-        block: a 4x4 list used to store the AES state
-        text: bytes containing the input data
-        base: starting byte index of the block
+    Parâmetros:
+        block: lista 4x4 usada para armazenar o estado AES
+        text: bytes contendo os dados de entrada
+        base: índice inicial do bloco em bytes
 
-    Returns:
-        block: the 4x4 AES state
+    Retorna:
+        block: o estado AES 4x4
     """
 
     i_block = 0
@@ -353,14 +353,14 @@ def to_block(block, text, base):
 
 def encrypt_block(block, key):
     """
-    Encrypts a single 16-byte AES block
+    Criptografa um único bloco AES de 16 bytes.
 
-    Parameters:
-        block: a 4x4 AES state block to encrypt
-        key: the original 128-bit key
+    Parâmetros:
+        block: bloco de estado AES 4x4 a ser criptografado
+        key: chave original de 128 bits
 
-    Returns:
-        cipher_block: the encrypted 16-byte block
+    Retorna:
+        cipher_block: bloco criptografado de 16 bytes
     """
 
     W = key_expansion(list(key))
@@ -388,14 +388,14 @@ def encrypt_block(block, key):
 
 def encrypt(plaintext, key):
     """
-    Encrypts a plaintext message with PKCS#7 padding
+    Criptografa uma mensagem em texto claro com padding PKCS#7.
 
-    Parameters:
-        plaintext: bytes to encrypt
-        key: the original 128-bit key
+    Parâmetros:
+        plaintext: bytes a serem criptografados
+        key: chave original de 128 bits
 
-    Returns:
-        ciphertext: the encrypted bytes
+    Retorna:
+        ciphertext: bytes criptografados
     """
 
     plaintext = pad(plaintext)
@@ -420,14 +420,14 @@ def encrypt(plaintext, key):
 
 def decrypt_block(block, key):
     """
-    Decrypts a single 16-byte AES block
+    Descriptografa um único bloco AES de 16 bytes.
 
-    Parameters:
-        block: a 4x4 AES state block to decrypt
-        key: the original 128-bit key
+    Parâmetros:
+        block: bloco de estado AES 4x4 a ser descriptografado
+        key: chave original de 128 bits
 
-    Returns:
-        plain_block: the decrypted 16-byte block
+    Retorna:
+        plain_block: bloco descriptografado de 16 bytes
     """
 
     W = key_expansion(list(key))
@@ -456,14 +456,14 @@ def decrypt_block(block, key):
 
 def decrypt(ciphertext, key):
     """
-    Decrypts a ciphertext message and removes PKCS#7 padding
+    Descriptografa uma mensagem cifrada e remove o padding PKCS#7.
 
-    Parameters:
-        ciphertext: encrypted bytes to decrypt
-        key: the original 128-bit key
+    Parâmetros:
+        ciphertext: bytes criptografados a serem descriptografados
+        key: chave original de 128 bits
 
-    Returns:
-        plaintext: the decrypted and unpadded bytes
+    Retorna:
+        plaintext: bytes descriptografados e sem padding
     """
 
     plaintext = b""
