@@ -212,15 +212,16 @@ def matrix_multiplier_aux(element_line, element_column):
         result: o produto representado como valor hexadecimal
     """
 
+    # converte os números de entrada para textos em formato binário de 8 bits
     e1 = bin(element_line)[2:].zfill(8)
     e2 = bin(element_column)[2:].zfill(8)
 
     result = 0
 
-    # Se o bit atual de e2 for 1, adiciona e1 deslocado
-    # para a posição correspondente
+    # Percorre os bits do e2 do menos significativo ao mais significativo
+    # Se o bit atual de e2 for 1, adiciona e1 deslocado para a posição correspondente
     for l in range(7, -1, -1):
-        if(e2[l] == '1'):
+        if (e2[l] == '1'):
             result ^= int(e1, 2) << 7 - l
 
     # Polinomio primo 
