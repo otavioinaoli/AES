@@ -107,32 +107,49 @@ def shiftrows(block, c):
 
     return y
 
-#Função que faz multiplicação de 2 elementos
 def matrix_multiplier_aux(element_line, element_column):
-    #Converto a coluna de números hexadecimais para binário, para ver se realizo os shifts
+    """
+    Multiplies two AES field elements in GF(2^8) using the irreducible polynomial
+
+    Parameters:
+        element_line: the first element to multiply
+        element_column: the second element to multiply
+
+    Returns:
+        result: the product represented as a hexadecimal value
+    """
+
     e1 = bin(element_line)[2:].zfill(8)
     e2 = bin(element_column)[2:].zfill(8)
 
     result = 0
 
-    #Fazendo a multiplicação entre os 2 números
     for l in range(7, -1, -1):
         if(e2[l] == '1'):
             result ^= int(e1, 2) << 7 - l
 
-
-    #polinomio primo m(x) =x8+x4+x3+x+1
+    # Polinomio primo m(x) = x^8 + x^4 + x^3 + x + 1
     pp = 0b100011011
 
-    #Realizando a divisão modular do resultado da multiplicação pelo polinomio primo    
     while result.bit_length() >= pp.bit_length():
-        result ^= pp <<  (result.bit_length() - pp.bit_length())
-        
+        result ^= pp << (result.bit_length() - pp.bit_length())
+
     return hex(result)
 
-#Função que faz multiplicação de matrizes     
+
 def matrix_multiplier(matrix1, matrix2):
-    matrix_result =  [
+    """
+    Multiplies two 4x4 matrices over the AES finite field.
+
+    Parameters:
+        matrix1: the left matrix
+        matrix2: the right matrix
+
+    Returns:
+        matrix_result: the product matrix
+    """
+
+    matrix_result = [
             [0, 0, 0, 0],
             [0, 0, 0, 0],
             [0, 0, 0, 0],
@@ -142,14 +159,25 @@ def matrix_multiplier(matrix1, matrix2):
         for j in range (4):
             for k in range (4):
                 matrix_result[i][j] ^= int(matrix_multiplier_aux(matrix1[i][k], matrix2[k][j]), 16)
-                
-                
+
     return matrix_result
 
 def mixcolumm(block, c):
+    """
+    Applies the MixColumns transformation to a 4x4 AES state.
+
+    Parameters:
+        block: the current AES state matrix
+        c: direction selector, where 0 applies the standard MixColumns and
+           1 applies the inverse MixColumns transformation
+
+    Returns:
+        block: the state after the MixColumns operation
+    """
+
     if c == 0:
         return matrix_multiplier(MIX_COLUMNS_MATRIX, block)
-    
+
     return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
 
 def g(W, i_round):
@@ -244,6 +272,41 @@ def key_addition(block, round_key):
 
     return block
 
+def pad(text):
+    """
+    Adds PKCS#7 padding so that the text length is a multiple of 16 bytes
+
+    Parameters:
+        text: bytes to be padded
+
+    Returns:
+        text: padded bytes
+    """
+
+    padding_size = 16 - (len(text) % 16)
+    return text + bytes([padding_size]) * padding_size
+
+
+def unpad(text):
+    """
+    Removes PKCS#7 padding from the text when present
+
+    Parameters:
+        text: padded bytes
+
+    Returns:
+        text: original bytes without PKCS#7 padding if it is valid
+    """
+
+    if not text:
+        return text
+
+    padding_size = text[-1]
+    if 1 <= padding_size <= 16 and text.endswith(bytes([padding_size]) * padding_size):
+        return text[:-padding_size]
+
+    return text
+
 def to_bytes(block):
     """
     Converts a 4x4 AES state into bytes
@@ -265,7 +328,7 @@ def to_bytes(block):
     
 def to_block(block, text, base):
     """
-    Converts 16 bytes of text into a 4x4 AES state.
+    Converts 16 bytes of text into a 4x4 AES state
 
     Parameters:
         block: a 4x4 list used to store the AES state
@@ -282,17 +345,24 @@ def to_block(block, text, base):
         for i in range(4):
             index = base + i_block
 
-            if index < len(text):
-                block[i][j] = text[index]
-            else:
-                block[i][j] = 0
+            block[i][j] = text[index]
 
             i_block += 1
 
     return block
 
 def encrypt_block(block, key):
-    # Generate the round keys
+    """
+    Encrypts a single 16-byte AES block
+
+    Parameters:
+        block: a 4x4 AES state block to encrypt
+        key: the original 128-bit key
+
+    Returns:
+        cipher_block: the encrypted 16-byte block
+    """
+
     W = key_expansion(list(key))
 
     # Round 1
@@ -317,6 +387,19 @@ def encrypt_block(block, key):
     return to_bytes(block)
 
 def encrypt(plaintext, key):
+    """
+    Encrypts a plaintext message with PKCS#7 padding
+
+    Parameters:
+        plaintext: bytes to encrypt
+        key: the original 128-bit key
+
+    Returns:
+        ciphertext: the encrypted bytes
+    """
+
+    plaintext = pad(plaintext)
+
     ciphertext = b""
     base = 0
 
@@ -336,7 +419,17 @@ def encrypt(plaintext, key):
     return bytes(ciphertext)
 
 def decrypt_block(block, key):
-    # Generate the round keys
+    """
+    Decrypts a single 16-byte AES block
+
+    Parameters:
+        block: a 4x4 AES state block to decrypt
+        key: the original 128-bit key
+
+    Returns:
+        plain_block: the decrypted 16-byte block
+    """
+
     W = key_expansion(list(key))
 
     # Round 1
@@ -362,6 +455,17 @@ def decrypt_block(block, key):
 
 
 def decrypt(ciphertext, key):
+    """
+    Decrypts a ciphertext message and removes PKCS#7 padding
+
+    Parameters:
+        ciphertext: encrypted bytes to decrypt
+        key: the original 128-bit key
+
+    Returns:
+        plaintext: the decrypted and unpadded bytes
+    """
+
     plaintext = b""
 
     base = 0
@@ -379,4 +483,4 @@ def decrypt(ciphertext, key):
 
         base += 16
         
-    return bytes(plaintext)
+    return unpad(plaintext)
