@@ -57,6 +57,48 @@ INV_MIX_COLUMNS_MATRIX = [
     [0x0B, 0x0D, 0x09, 0x0E]
 ]
 
+def g(W, i_round):
+    """
+    Aplica a função g() em uma palavra de 4 bytes.
+
+    Parâmetros:
+        W: uma lista com uma palavra de 4 bytes
+        i_round: índice da rodada, começando em 1
+    Retorna:
+        W: a palavra transformada
+    """
+
+    # RotWord: rotaciona a palavra um byte para a esquerda
+    W = W[1:] + W[:1]
+
+    # SubWord: aplica a S-box a cada byte
+    for i in range (4):
+        W[i] = S_BOX[W[i]]
+
+    # Round Constant: faz XOR do primeiro byte com a constante da rodada
+    W[0] = W[0] ^ RC[i_round-1]
+
+    return W
+
+def xor(w1, w2):
+    """
+    Aplica a operação XOR entre duas palavras de 4 bytes.
+
+    Parâmetros:
+        w1: lista contendo a primeira palavra de 4 bytes
+        w2: lista contendo a segunda palavra de 4 bytes
+
+    Retorna:
+        result: lista contendo o resultado do XOR byte a byte
+    """
+
+    result = [None] * 4
+
+    for i in range(4):
+        result[i] = w1[i] ^ w2[i]
+
+    return result
+
 def key_expansion(key):
     """
     Expande a chave AES de 128 bits em 44 words, agrupadas em 11 chaves de rodada, com 4 words por chave
@@ -113,6 +155,7 @@ def byte_substitution(block, c):
 
     Parâmetros:
         block: lista 4x4 contendo os bytes do estado AES
+        c: direção do deslocamento: 0 para a esquerda (criptografia) e 1 para a direita (descriptografia)
 
     Retorna:
         block: bloco após aplicar a substituição S-box
@@ -236,49 +279,6 @@ def mixcolumm(block, c):
     # decifragem
     return matrix_multiplier(INV_MIX_COLUMNS_MATRIX, block)
 
-def g(W, i_round):
-    """
-    Aplica a função g() em uma palavra de 4 bytes.
-
-    Parâmetros:
-        W: uma lista com uma palavra de 4 bytes
-        i_round: índice da rodada, começando em 1
-    Retorna:
-        W: a palavra transformada
-    """
-
-    # RotWord: rotaciona a palavra um byte para a esquerda
-    W = W[1:] + W[:1]
-
-    # SubWord: aplica a S-box a cada byte
-    for i in range (4):
-        W[i] = S_BOX[W[i]]
-
-    # Round Constant: faz XOR do primeiro byte com a constante da rodada
-    W[0] = W[0] ^ RC[i_round-1]
-
-    return W
-
-def xor(w1, w2):
-    """
-    Aplica a operação XOR entre duas palavras de 4 bytes.
-
-    Parâmetros:
-        w1: lista contendo a primeira palavra de 4 bytes
-        w2: lista contendo a segunda palavra de 4 bytes
-
-    Retorna:
-        result: lista contendo o resultado do XOR byte a byte
-    """
-
-    result = [None] * 4
-
-    for i in range(4):
-        result[i] = w1[i] ^ w2[i]
-
-    return result
-
-
 def pad(text):
     """
     Adiciona padding PKCS#7 para que o tamanho do texto seja múltiplo de 16 bytes.
@@ -398,7 +398,7 @@ def encrypt_block(block, key):
     # Round 10
     block = byte_substitution(block, 0)
     block = shiftrows(block, 0)
-    block = key_addition(block, W[40 : 44]) # última word
+    block = key_addition(block, W[40 : 44]) # última subchave
 
     return to_bytes(block)
 
@@ -451,7 +451,7 @@ def decrypt_block(block, key):
     W = key_expansion(list(key))
 
     # Round 1
-    block = key_addition(block, W[40 : 44]) # começa usando a última word
+    block = key_addition(block, W[40 : 44]) # começa usando a última subchave
     block = shiftrows(block, 1)
     block = byte_substitution(block, 1)
 

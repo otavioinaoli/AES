@@ -31,7 +31,7 @@ def menu():
     print("\n-----------------"
           "\n1- 🔐 Cifragem"
           "\n2- 🔓 Decifragem"
-          "\n3- 🚪 Sair"
+          "\n3- 🚪🚶 Sair"
           "\n-----------------")
 
     mode = -1
